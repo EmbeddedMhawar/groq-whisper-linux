@@ -95,7 +95,7 @@ environment.systemPackages = with pkgs; [
 
 ```bash
 # Clone or download the script
-git clone https://github.com/YOUR_USERNAME/groq-whisper.git
+git clone https://github.com/EmbeddedMhawar/groq-whisper.git
 cd groq-whisper
 
 # Make it executable
