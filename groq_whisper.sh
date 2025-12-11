@@ -26,6 +26,8 @@ if [ -f "$PIDFILE" ]; then
     # --- STOP RECORDING & TRANSCRIBE ---
     PID=$(cat "$PIDFILE")
     if kill -0 "$PID" 2>/dev/null; then
+        notify-send -u low -t 1000 "Groq" "Finishing..."
+        sleep 1
         # Send SIGINT (Ctrl+C) so SoX writes the file header properly
         kill -INT "$PID"
         # Wait for the process to actually finish writing
