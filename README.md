@@ -159,5 +159,8 @@ bindsym $mod+r exec /path/to/groq_whisper.sh
 4. Press `Super+R` when prompted
 </details>
 
+## Roadmap
+- [ ] **Real-time Feedback**: Streaming transcription to visualize text as you speak (likely requires Python rewrite).
+
 ## License
 MIT
