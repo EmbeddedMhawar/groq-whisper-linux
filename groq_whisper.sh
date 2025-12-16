@@ -1,25 +1,10 @@
 #!/bin/bash
 
-# ╔═══════════════════════════════════════════════════════════════════════════╗
-# ║  Groq Whisper - Voice-to-Text for Linux (Wispr Flow Alternative)         ║
-# ║  Works on any distro with Wayland or X11                                  ║
-# ╚═══════════════════════════════════════════════════════════════════════════╝
-
 # --- CONFIG ---
-# Get your free API key from: https://console.groq.com/keys
 API_KEY="${GROQ_API_KEY:-YOUR_API_KEY_HERE}"
-
-# Temp files location
-FILENAME="/tmp/groq_rec.flac"
+# Changed to .flac for compression (approx 3x longer recording time than .wav)
+FILENAME="/tmp/groq_rec.flac" 
 PIDFILE="/tmp/groq_rec.pid"
-
-# --- CLIPBOARD TOOL DETECTION ---
-# Automatically detect Wayland vs X11 and set clipboard command
-if [ "$XDG_SESSION_TYPE" = "wayland" ]; then
-    COPY_CMD="wl-copy"
-else
-    COPY_CMD="xclip -selection clipboard"
-fi
 # ----------------
 
 if [ -f "$PIDFILE" ]; then
@@ -28,7 +13,7 @@ if [ -f "$PIDFILE" ]; then
     if kill -0 "$PID" 2>/dev/null; then
         notify-send -u low -t 1000 "Groq" "Finishing..."
         sleep 1.5
-        # Send SIGINT (Ctrl+C) so SoX writes the file header properly
+        # FIX 1: Send SIGINT (Ctrl+C) so SoX writes the file header properly
         kill -INT "$PID"
         # Wait for the process to actually finish writing
         wait "$PID" 2>/dev/null
@@ -38,13 +23,14 @@ if [ -f "$PIDFILE" ]; then
 
     notify-send -u low -t 2000 "Groq" "Transcribing..."
 
-    # Retry configuration (handles cold-start HTTP 400 errors)
+    # Retry configuration
     MAX_RETRIES=3
     RETRY_DELAY=1
     HTTP_CODE=""
     TEXT=""
 
     for ((attempt=1; attempt<=MAX_RETRIES; attempt++)); do
+        # Capture HTTP Code to distinguish real errors from the word "error"
         RESPONSE=$(curl -s -w "\n%{http_code}" "https://api.groq.com/openai/v1/audio/transcriptions" \
           -H "Authorization: Bearer $API_KEY" \
           -H "Content-Type: multipart/form-data" \
@@ -57,23 +43,26 @@ if [ -f "$PIDFILE" ]; then
           --retry-delay 1 \
           --retry-connrefused)
 
+        # Extract Status Code (last line) and Body (everything else)
         HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
         TEXT=$(echo "$RESPONSE" | sed '$d')
 
+        # Success - break out of retry loop
         if [[ "$HTTP_CODE" == "200" ]]; then
             break
         fi
 
-        # Retry on transient errors
+        # Retryable errors: 400, 429 (rate limit), 500, 502, 503, 504
         if [[ "$HTTP_CODE" =~ ^(400|429|500|502|503|504)$ ]] && [[ $attempt -lt $MAX_RETRIES ]]; then
             notify-send -u low -t 1500 "Groq" "Retrying... (attempt $((attempt+1))/$MAX_RETRIES)"
             sleep $RETRY_DELAY
-            RETRY_DELAY=$((RETRY_DELAY * 2))
+            RETRY_DELAY=$((RETRY_DELAY * 2))  # Exponential backoff
         else
             break
         fi
     done
 
+    # Check HTTP Status 200 (OK) instead of grep text
     if [[ "$HTTP_CODE" != "200" ]]; then
         echo "Error (HTTP $HTTP_CODE) after $attempt attempts: $TEXT" > /tmp/groq_error.log
         notify-send -u critical "Groq Error" "Failed (Code $HTTP_CODE). Check /tmp/groq_error.log"
@@ -81,14 +70,6 @@ if [ -f "$PIDFILE" ]; then
         # --- REFINE TEXT (Grammar & Markdown) ---
         notify-send -u low -t 2000 "Groq" "Refining..."
         
-        # Check for jq dependency
-        if ! command -v jq &> /dev/null; then
-             notify-send -u critical "Groq Error" "jq is required for refinement. Please install jq."
-             # Fallback to raw text
-             echo -n "$TEXT" | $COPY_CMD
-             exit 1
-        fi
-
         # Escape JSON string safely using jq
         JSON_PAYLOAD=$(jq -n \
           --arg model "openai/gpt-oss-20b" \
@@ -122,28 +103,20 @@ if [ -f "$PIDFILE" ]; then
              FINAL_TEXT="$REFINED_TEXT"
         fi
 
-        # Success - copy to clipboard
-        echo -n "$FINAL_TEXT" | $COPY_CMD
-        notify-send -u low -t 2000 "Groq" "Refined & Copied!"
+        # Success
+        echo -n "$FINAL_TEXT" | wl-copy
+        notify-send -u low -t 2000 "Groq" "Pasted!"
         
-        # --- AUTO-PASTE (Optional - Uncomment for your environment) ---
-        # Hyprland (Wayland):
-        # hyprctl dispatch sendshortcut CTRL SHIFT, V, activewindow
-        
-        # Sway (Wayland):
-        # swaymsg exec 'wtype -M ctrl v -m ctrl'
-        
-        # GNOME/KDE (X11):
-        # xdotool key ctrl+v
-        
-        # i3 (X11):
-        # xdotool key ctrl+v
+        # Hyprland Auto-Paste
+        # Always use Ctrl+Shift+V
+        hyprctl dispatch sendshortcut CTRL SHIFT, V, activewindow
     fi
 
 else
     # --- START RECORDING ---
-    # Uses FLAC (lossless compression) to stay under Groq's 25MB limit
-    rec -q -r 16000 -c 1 -b 16 "$FILENAME" &
+    # Uses FLAC (lossless compression) to stay under 25MB limit for longer
+    # Timeout after 5 minutes (300 seconds)
+    rec -q -r 16000 -c 1 -b 16 "$FILENAME" trim 0 300 &
     echo $! > "$PIDFILE"
-    notify-send -u low -t 1000 "Groq" "🎤 Listening... (Press again to finish)"
+    notify-send -u low -t 1000 "Groq" "Listening... (Press again to finish)"
 fi

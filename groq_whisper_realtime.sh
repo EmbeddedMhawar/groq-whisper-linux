@@ -58,8 +58,19 @@ cleanup() {
 # Trap signals for cleanup
 trap cleanup EXIT INT TERM
 
+START_TIME=$SECONDS
+
 count=0
 while [ -f "$PIDFILE" ]; do
+    # Check for 5 minute timeout
+    CURRENT_TIME=$SECONDS
+    ELAPSED=$((CURRENT_TIME - START_TIME))
+    if [ $ELAPSED -ge 300 ]; then
+        notify-send -u critical "Groq Realtime" "Session timeout (5 mins)."
+        rm "$PIDFILE"
+        break
+    fi
+
     count=$((count+1))
     FILENAME="$SESSION_DIR/${count}.flac"
     TXTNAME="$SESSION_DIR/${count}.txt"

@@ -100,18 +100,8 @@ if [ -f "$PIDFILE" ]; then
 
 else
     # --- START RECORDING ---
-    # Smart VAD: Record until 0.6s silence or 10s max
-    rec -q -r 16000 -c 1 -b 16 "$FILENAME" silence 1 0.1 3% 1 0.6 3% trim 0 10 2>/dev/null &
-    PID=$!
-    echo $PID > "$PIDFILE"
-    notify-send -u low -t 1000 "Groq Ask" "🎤 Ask me anything..."
-    
-    # Wait for recording to finish (background process)
-    wait $PID
-    
-    # If it finished naturally (silence detection), trigger the processing logic immediately
-    # by calling the script recursively
-    if [ -f "$PIDFILE" ]; then
-        $0 &
-    fi
+    # Manual mode: Record until pressed again or 5 mins max
+    rec -q -r 16000 -c 1 -b 16 "$FILENAME" trim 0 300 &
+    echo $! > "$PIDFILE"
+    notify-send -u low -t 1000 "Groq Ask" "🎤 Ask me anything... (Press to finish)"
 fi
