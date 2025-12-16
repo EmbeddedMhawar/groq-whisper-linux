@@ -128,9 +128,7 @@ if [ -f "$PIDFILE" ]; then
         
         # --- AUTO-PASTE (Optional - Uncomment for your environment) ---
         # Hyprland (Wayland):
-        # hyprctl dispatch sendshortcut CTRL, V, activewindow
-        # Alternative (Super+V):
-        # hyprctl dispatch sendshortcut SUPER, V, activewindow
+        # hyprctl dispatch sendshortcut CTRL SHIFT, V, activewindow
         
         # Sway (Wayland):
         # swaymsg exec 'wtype -M ctrl v -m ctrl'
