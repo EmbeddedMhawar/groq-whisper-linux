@@ -7,6 +7,7 @@
 
 # --- CONFIG ---
 API_KEY="${GROQ_API_KEY:-YOUR_API_KEY_HERE}"
+PPLX_API_KEY="${PERPLEXITY_API_KEY:-}" # Optional: Set this env var for Perplexity fact-checking
 MODEL="openai/gpt-oss-120b"  # Fastest Large Model (~500 T/s)
 # MODEL="llama-3.3-70b-versatile" # Alternative if you prefer Meta models
 
@@ -82,6 +83,35 @@ if [ -f "$PIDFILE" ]; then
       -d "$JSON_PAYLOAD")
 
     ANSWER=$(echo "$ANSWER_RESPONSE" | jq -r '.choices[0].message.content')
+
+    # --- OPTIONAL: PERPLEXITY FACT CHECK ---
+    if [[ -n "$PPLX_API_KEY" && "$ANSWER" != "null" && -n "$ANSWER" ]]; then
+        notify-send -u low -t 2000 "Groq Ask" "Fact checking..."
+        
+        PPLX_PAYLOAD=$(jq -n \
+          --arg model "sonar" \
+          --arg system "You are a diligent fact-checker. Verify the following answer to the user's question. If the answer is accurate, confirm it. If it is inaccurate, correct it. You MUST include explicit quotes and citations with direct LINKS/URLs to the sources. Output ONLY the final verified answer." \
+          --arg content "Question: $TEXT\nOriginal Answer: $ANSWER" \
+          '{
+            model: $model,
+            messages: [
+              {role: "system", content: $system},
+              {role: "user", content: $content}
+            ]
+          }')
+
+        PPLX_RESPONSE=$(curl -s "https://api.perplexity.ai/chat/completions" \
+          -H "Authorization: Bearer $PPLX_API_KEY" \
+          -H "Content-Type: application/json" \
+          -d "$PPLX_PAYLOAD")
+
+        PPLX_ANSWER=$(echo "$PPLX_RESPONSE" | jq -r '.choices[0].message.content')
+        
+        if [[ "$PPLX_ANSWER" != "null" && -n "$PPLX_ANSWER" ]]; then
+            ANSWER="$PPLX_ANSWER"
+        fi
+    fi
+    # ---------------------------------------
 
     if [[ "$ANSWER" == "null" || -z "$ANSWER" ]]; then
          notify-send -u critical "Groq Ask" "AI failed to answer."
