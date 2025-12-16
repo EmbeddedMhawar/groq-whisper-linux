@@ -67,7 +67,7 @@ if [ -f "$PIDFILE" ]; then
         messages: [
           {
             role: "system",
-            content: "You are a super-concise, high-speed assistant. Answer immediately and extremely briefly. No filler words or preambles. ALWAYS include explicit quotes and cite the source of your information WITH LINKS/URLS, but keep the explanation minimal. Use Markdown."
+            content: "You are a super-concise, high-speed assistant. Answer immediately and extremely briefly. No filler words or preambles. ALWAYS include explicit quotes and cite the source of your information, but keep the explanation minimal. Use Markdown."
           },
           {
             role: "user",
