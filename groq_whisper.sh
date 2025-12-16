@@ -27,11 +27,12 @@ if [ -f "$PIDFILE" ]; then
     PID=$(cat "$PIDFILE")
     if kill -0 "$PID" 2>/dev/null; then
         notify-send -u low -t 1000 "Groq" "Finishing..."
-        sleep 1
+        sleep 1.5
         # Send SIGINT (Ctrl+C) so SoX writes the file header properly
         kill -INT "$PID"
         # Wait for the process to actually finish writing
         wait "$PID" 2>/dev/null
+        sleep 0.5
     fi
     rm "$PIDFILE"
 
@@ -84,6 +85,8 @@ if [ -f "$PIDFILE" ]; then
         # --- AUTO-PASTE (Optional - Uncomment for your environment) ---
         # Hyprland (Wayland):
         # hyprctl dispatch sendshortcut CTRL, V, activewindow
+        # Alternative (Super+V):
+        # hyprctl dispatch sendshortcut SUPER, V, activewindow
         
         # Sway (Wayland):
         # swaymsg exec 'wtype -M ctrl v -m ctrl'
