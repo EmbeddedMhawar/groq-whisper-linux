@@ -98,7 +98,7 @@ if [ -f "$PIDFILE" ]; then
             messages: [
               {
                 role: "system",
-                content: "You are an expert technical editor. Fix grammar, correct technical terminology, and format the provided text into clean Markdown (using bullet points, headers, and bolding where appropriate). Do not add filler. Output only the corrected text."
+                content: "You are an expert technical editor. Fix grammar, correct technical terminology, and format the provided text into clean Markdown. Important: If the text is a question, do NOT answer it; just correct the grammar/formatting of the question itself. Do not add filler. Output only the corrected text."
               },
               {
                 role: "user",
