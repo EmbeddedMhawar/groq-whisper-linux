@@ -78,9 +78,53 @@ if [ -f "$PIDFILE" ]; then
         echo "Error (HTTP $HTTP_CODE) after $attempt attempts: $TEXT" > /tmp/groq_error.log
         notify-send -u critical "Groq Error" "Failed (Code $HTTP_CODE). Check /tmp/groq_error.log"
     else
+        # --- REFINE TEXT (Grammar & Markdown) ---
+        notify-send -u low -t 2000 "Groq" "Refining..."
+        
+        # Check for jq dependency
+        if ! command -v jq &> /dev/null; then
+             notify-send -u critical "Groq Error" "jq is required for refinement. Please install jq."
+             # Fallback to raw text
+             echo -n "$TEXT" | $COPY_CMD
+             exit 1
+        fi
+
+        # Escape JSON string safely using jq
+        JSON_PAYLOAD=$(jq -n \
+          --arg model "openai/gpt-oss-20b" \
+          --arg content "$TEXT" \
+          '{
+            model: $model,
+            messages: [
+              {
+                role: "system",
+                content: "You are an expert technical editor. Fix grammar, correct technical terminology, and format the provided text into clean Markdown (using bullet points, headers, and bolding where appropriate). Do not add filler. Output only the corrected text."
+              },
+              {
+                role: "user",
+                content: $content
+              }
+            ]
+          }')
+
+        REFINED_RESPONSE=$(curl -s "https://api.groq.com/openai/v1/chat/completions" \
+          -H "Authorization: Bearer $API_KEY" \
+          -H "Content-Type: application/json" \
+          -d "$JSON_PAYLOAD")
+        
+        # Extract refined content using jq
+        REFINED_TEXT=$(echo "$REFINED_RESPONSE" | jq -r '.choices[0].message.content')
+        
+        # Fallback to original text if refinement fails or returns null
+        if [[ "$REFINED_TEXT" == "null" || -z "$REFINED_TEXT" ]]; then
+             FINAL_TEXT="$TEXT"
+        else
+             FINAL_TEXT="$REFINED_TEXT"
+        fi
+
         # Success - copy to clipboard
-        echo -n "$TEXT" | $COPY_CMD
-        notify-send -u low -t 2000 "Groq" "Copied to clipboard!"
+        echo -n "$FINAL_TEXT" | $COPY_CMD
+        notify-send -u low -t 2000 "Groq" "Refined & Copied!"
         
         # --- AUTO-PASTE (Optional - Uncomment for your environment) ---
         # Hyprland (Wayland):
