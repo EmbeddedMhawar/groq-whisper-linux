@@ -67,7 +67,7 @@ if [ -f "$PIDFILE" ]; then
         messages: [
           {
             role: "system",
-            content: "You are a highly intelligent, super-fast assistant. Provide a direct, concise, and accurate answer to the user'\''s question. Do not waffle. Always include explicit quotes and cite the source of your information. Use Markdown for clarity."
+            content: "You are a super-concise, high-speed assistant. Answer immediately and extremely briefly. No filler words or preambles. Explicitly cite sources/quotes where necessary, but keep the explanation minimal. Use Markdown."
           },
           {
             role: "user",
