@@ -90,7 +90,7 @@ if [ -f "$PIDFILE" ]; then
         
         PPLX_PAYLOAD=$(jq -n \
           --arg model "sonar" \
-          --arg system "You are a diligent fact-checker. Verify the following answer to the user's question. If the answer is accurate, confirm it. If it is inaccurate, correct it. You MUST include explicit quotes and citations with direct LINKS/URLs to the sources. Output ONLY the final verified answer." \
+          --arg system "You are a diligent fact-checker. Verify the answer. If accurate, confirm it; if inaccurate, correct it. You MUST include explicit quotes. Place the direct URL citation IMMEDIATELY below each quote (not at the bottom). Output ONLY the final verified answer." \
           --arg content "Question: $TEXT\nOriginal Answer: $ANSWER" \
           '{
             model: $model,
