@@ -156,7 +156,7 @@ else
     # So if I start with SUPER+A (default) and stop with SUPER+B (brainstorm), it will brainstorm.
     # This is actually a cool feature. Start recording, then decide how to process.
     
-    rec -q -r 16000 -c 1 -b 16 "$FILENAME" trim 0 300 &
+    ffmpeg -y -f pulse -i default -ac 1 -ar 16000 -t 300 -loglevel error "$FILENAME" &
     echo $! > "$PIDFILE"
     if [[ "$MODE" == "brainstorm" ]]; then
         notify-send -u low -t 1000 "Groq Brainstorm" "🎤 Brainstorming... (Press to finish)"

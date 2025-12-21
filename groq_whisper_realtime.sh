@@ -17,9 +17,8 @@ if [ -f "$PIDFILE" ]; then
         # 1. Remove PIDFILE to signal the main loop to stop
         rm "$PIDFILE"
         
-        # 2. Kill the 'rec' process so the current recording stops immediately
-        #    This allows the final partial chunk to be processed instead of abandoned.
-        pkill -P "$PID" rec 2>/dev/null
+        # 2. Kill the 'ffmpeg' process so the current recording stops immediately
+        pkill -P "$PID" ffmpeg 2>/dev/null
     else
         # Stale PID file
         rm "$PIDFILE"
@@ -40,7 +39,6 @@ cleanup() {
     wait
     
     # Concatenate all text files in order
-    # sort -n ensures 1.txt, 2.txt, ... 10.txt order
     FULL_TEXT=$(find "$SESSION_DIR" -name "*.txt" | sort -V | xargs cat 2>/dev/null)
     
     if [ -n "$FULL_TEXT" ]; then
@@ -75,13 +73,10 @@ while [ -f "$PIDFILE" ]; do
     FILENAME="$SESSION_DIR/${count}.flac"
     TXTNAME="$SESSION_DIR/${count}.txt"
     
-    # Smart Record:
-    # 1. Wait for sound (silence 1 0.1 3%)
-    # 2. Stop on silence (1 0.5 3%)
-    # No max duration (records until silence)
-    rec -q -r 16000 -c 1 -b 16 "$FILENAME" silence 1 0.1 3% 1 0.5 3% 2>/dev/null
+    # Record in 4-second chunks
+    ffmpeg -y -f pulse -i default -ac 1 -ar 16000 -t 4 -loglevel error "$FILENAME"
     
-    # If file is empty or missing (e.g. immediate stop), skip
+    # If file is empty or missing, skip
     if [ ! -s "$FILENAME" ]; then
         continue
     fi

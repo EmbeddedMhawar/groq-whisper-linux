@@ -15,11 +15,13 @@ Leverages Groq's LPU inference engine for near-instant transcription.
 ### 2. Simplicity
 One keybind to rule them all.
 - **Press**: Start recording.
-- **Press Again**: Stop & Transcribe.
-- **Result**: Text is auto-copied to your clipboard.
+- **Modes**:
+  - **Fast Mode (`fast`)**: Near-instant transcription.
+  - **Fix Mode (`fix`)**: Transcription followed by GPT-OSS-120b grammar correction and formatting.
+- **Result**: Text is auto-copied to your clipboard and auto-pasted.
 
-### 3. Reliability
-Includes smart retry logic to handle API cold-starts, ensuring you never lose a thought.
+### 4. Real-time Feedback
+Streaming transcription to visualize text as you speak in small chunks.
 
 ## Setup
 
@@ -29,11 +31,92 @@ Includes smart retry logic to handle API cold-starts, ensuring you never lose a 
 <summary><b>Arch Linux / Manjaro</b></summary>
 
 ```bash
-sudo pacman -S sox libnotify curl
+sudo pacman -S ffmpeg libnotify curl
 # For Wayland:
 sudo pacman -S wl-clipboard
 # For X11:
 sudo pacman -S xclip
+```
+</details>
+
+<details>
+<summary><b>Ubuntu / Debian / Pop!_OS</b></summary>
+
+```bash
+sudo apt install ffmpeg libnotify-bin curl
+# For Wayland:
+sudo apt install wl-clipboard
+# For X11:
+sudo apt install xclip
+```
+</details>
+
+<details>
+<summary><b>Fedora</b></summary>
+
+```bash
+sudo dnf install ffmpeg libnotify curl
+# For Wayland:
+sudo dnf install wl-clipboard
+# For X11:
+sudo dnf install xclip
+```
+</details>
+
+<details>
+<summary><b>openSUSE</b></summary>
+
+```bash
+sudo zypper install ffmpeg libnotify-tools curl
+# For Wayland:
+sudo zypper install wl-clipboard
+# For X11:
+sudo zypper install xclip
+```
+</details>
+
+<details>
+<summary><b>NixOS</b></summary>
+
+```nix
+# In your configuration.nix or home.nix
+environment.systemPackages = with pkgs; [
+  ffmpeg
+  libnotify
+  curl
+  wl-clipboard  # For Wayland
+  # xclip       # For X11
+];
+```
+</details>
+
+### 2. Install Scripts
+
+```bash
+git clone https://github.com/EmbeddedMhawar/groq-whisper.git
+cd groq-whisper
+chmod +x groq_whisper.sh groq_whisper_realtime.sh
+```
+
+### 3. Configuration
+Set your API key (get one for free at console.groq.com):
+```bash
+export GROQ_API_KEY="your_key_here"
+```
+
+### 4. Keybindings
+
+<details>
+<summary><b>Hyprland</b></summary>
+
+Add to `~/.config/hypr/hyprland.conf`:
+```conf
+# Fast transcription
+bind = SUPER, R, exec, /path/to/groq_whisper.sh fast
+# Fix grammar with GPT-OSS
+bind = SUPER SHIFT, R, exec, /path/to/groq_whisper.sh fix
+# Real-time streaming
+bind = SUPER CTRL, R, exec, /path/to/groq_whisper_realtime.sh
 ```
 </details>
 
@@ -158,9 +241,6 @@ bindsym $mod+r exec /path/to/groq_whisper.sh
 3. Command: `/path/to/groq_whisper.sh`
 4. Press `Super+R` when prompted
 </details>
-
-## Roadmap
-- [ ] **Real-time Feedback**: Streaming transcription to visualize text as you speak (likely requires Python rewrite).
 
 ## License
 MIT
